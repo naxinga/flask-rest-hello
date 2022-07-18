@@ -52,4 +52,5 @@ class Planetas(db.Model):
 
 class Favoritos(db.Model):
     id = db.Column(db.Integer,primary_key=True)
-    personaje:id = db.Column(db.Integer,)
+    personaje:id = db.Column(db.Integer, db.ForeignKey('Personajes.id') )
+    category = db.relationship('Personajes',backref=db.backref('posts', lazy=True))
