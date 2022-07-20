@@ -9,6 +9,8 @@ class Users(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     nickname = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(80), unique=False, nullable=False)
+    favoritos_pj = db.relationship('Tag', secondary=tags, lazy='subquery',
+        backref=db.backref('pages', lazy=True))
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -50,7 +52,38 @@ class Planetas(db.Model):
             "name" : self.name,
         }
 
-class Favoritos(db.Model):
+
+favoritos_pj = db.Table('favpj',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('planeta_id', db.Integer, db.ForeignKey('planetas.id'), primary_key=True)
+)
+
+class FavoritosPj(db.Model):
     id = db.Column(db.Integer,primary_key=True)
-    personaje:id = db.Column(db.Integer, db.ForeignKey('Personajes.id') )
-    category = db.relationship('Personajes',backref=db.backref('posts', lazy=True))
+    personaje_id = db.Column(db.Integer, db.ForeignKey('Personajes.id') )
+    users_id = db.Column(db.Integer, db.ForeignKey('Users.id') ) 
+
+    def __repr__(self):
+        return '<Personaje Fav %r>' % self.personaje_id
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "personaje" : self.personaje_id,
+            "user": self.users_id,
+        }
+
+class FavoritosPl(db.Model):
+    id = db.Column(db.Integer,primary_key=True)
+    planeta_id = db.Column(db.Integer, db.ForeignKey('Planetas.id') )
+    users_id = db.Column(db.Integer, db.ForeignKey('Users.id') )
+
+    def __repr__(self):
+        return '<Planeta Fav %r>' % self.planeta_id
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "planeta": self.planeta_id,
+            "user": self.users_id,
+        }
