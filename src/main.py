@@ -1,6 +1,3 @@
-"""
-This module takes care of starting the API Server, Loading the DB and Adding the endpoints
-"""
 import os
 from flask import Flask, request, jsonify, url_for
 from flask_migrate import Migrate
@@ -8,8 +5,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db,Users,Personajes,Planetas,FavoritosPj,FavoritosPl
-#from models import Person
+from models import db, Users, Characters, Planets
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -31,44 +27,92 @@ def sitemap():
     return generate_sitemap(app)
 
 @app.route('/users', methods=['GET'])
-def get_users():
-    usuarios= Users.query.all()
+def handle_hello():
+    users = Users.query.all()
+    listUsers = list(map(lambda obj: obj.serialize(),users))
+    response_body = {
+        "result":listUsers
+    }
+    return jsonify(response_body), 200
 
-    lista_usuarios= list(map(lambda Us: Us.serialize(),usuarios))   
-
-    return jsonify(lista_usuarios), 200
-
-@app.route("/people" , methods=["GET"])
-def get_personajes():
-    personajes = Personajes.query.all()
-
-    lista_personajes = List(map(lambda Pjs: Pjs.serialize().personajes))
-
-    return jsonify (lista_personajes), 200
-
-@app.route("/people/<int:people_id>", methods=["GET"])
-def get_personajes_id():
-    personajes_id=Personajes.query.all(id)
-
-    pjs=personajes_id.serilize()
-
-    return jsonify(pjs), 200
+@app.route('/characters', methods=['GET'])
+def handle_characters():
+    characters = Characters.query.all()
+    listCharacters = list(map(lambda obj:obj.serialize(),characters))
+    response_body={
+        "result":listCharacters
+    }
+    return jsonify(response_body), 200
+    
+@app.route('/characters/<int:id>', methods = ['GET'])
+def handle_single_character():
+    single_characters = Characters.query.get(id)
+    characters = single_characters.serialize()
+    response_body = {
+        "result":characters
+    }
+    return jsonify(response_body), 200
 
 @app.route('/planets', methods=['GET'])
-def get_planetas():
-    planetas= Planetas.query.all()
+def handle_planets():
+    planets = Planets.query.all()
+    listPlanets = list(map(lambda obj:obj.serialize(),planets))
+    response_body={
+        "result":listPlanets
+    }
+    return jsonify(response_body), 200
+    
+@app.route('/planets/<int:id>', methods = ['GET'])
+def handle_single_planet():
+    single_planets = Planets.query.get(id)
+    planets = single_planets.serialize()
+    response_body = {
+        "result":planets
+    }
+    return jsonify(response_body), 200
 
-    lista_planetas = list(map(lambda Pla:Pla.serialize(),planetas))
+@app.route('/users/favorites', methods = ['GET'])
+def fav_users(users_id):
+    favorito_character=Users.query.filter_by(id=users_id).first().characters
+    favorito_planet= Users.query.filter_by(id=users_id).first().planets
+    lista_favoritos=[]
+    for i in favorito_character:
+        lista_favoritos.append(i.serialize())
+    for x in favorito_planet:
+        lista_favoritos.append(x.serialize())
+    return jsonify(lista_favoritos), 200
 
-    return jsonify(lista_planetas), 200
+@app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
+def add_fav_planet(planets_id):
+    planeta=Planets.query.get(planets_id)
+    usuario=Users.query.get(1)
+    usuario.planets.append(planeta)
+    db.session.commit()
+    return jsonify({"succes":"planeta agregado"}), 200
 
-@app.route("/planets/<int:planet_id>", methods=["GET"])
-def get_planetas_id(id):
-    planetas_id = Planetas.query.all(id)
+@app.route('/favorite/character/<int:character_id>', methods=['POST'])
+def add_fav_character(characters_id):
+    personaje=Characters.query.get(characters_id)
+    usuario=Users.query.get(1)
+    usuario.characters.append(personaje)
+    db.session.commit()
+    return jsonify({"succes":"personaje agregado"}), 200
 
-    lista_planetas_id = planetas_id.serialize()
+@app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
+def delete_fav_planet(planets_id):
+    planeta= Planets.query.get(planets_id)
+    usuario= Users.query.get(1)
+    usuario.planets.remove(planeta)
+    db.session.commit()
+    return jsonify({"succes":"planeta eliminado"}), 200
 
-    return jsonify(lista_planetas_id), 200
+@app.route('/favorite/character/<int:character_id>', methods=['DELETE'])
+def delete_fav_chracter(characters_id):
+    personaje= Characters.query.get(characters_id)
+    usuario= Users.query.get(1)
+    usuario.planets.remove(planeta)
+    db.session.commit()
+    return jsonify({"succes":"planeta eliminado"}), 200
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
